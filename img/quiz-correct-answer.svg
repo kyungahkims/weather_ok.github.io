@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
+    <defs>
+        <clipPath id="cdktd7tmca">
+            <path data-name="사각형 12823" transform="translate(-.286 -.428)" style="fill:#fff;stroke:#707070" d="M0 0h22v22H0z"/>
+        </clipPath>
+    </defs>
+    <g data-name="quiz_correct_answer" transform="translate(.286 .428)" style="clip-path:url(#cdktd7tmca)">
+        <g data-name="타원 499" transform="translate(-.286 -.428)" style="stroke:#0084fd;stroke-width:5px;fill:none">
+            <circle cx="11" cy="11" r="11" style="stroke:none"/>
+            <circle cx="11" cy="11" r="8.5" style="fill:none"/>
+        </g>
+    </g>
+</svg>
