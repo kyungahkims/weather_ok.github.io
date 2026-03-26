@@ -1,6 +1,6 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 :root {
-  --font-family: "Pretendard";
+  --font-family: 'Pretendard';
   --black-color: #000;
   --vh: 100%;
 }
@@ -180,67 +180,48 @@ body {
   margin-top: 16px;
 }
 .wrap .box1 .morning_call {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  height: 190px;
-}
-.wrap .box1 .morning_call .col {
-  height: 100%;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-  padding: 76px 0;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.wrap .box1 .morning_call .col::-webkit-scrollbar {
-  display: none;
-}
-.wrap .box1 .morning_call .col.ampm {
-  flex: 33.333%;
-}
-.wrap .box1 .morning_call .col.ampm span {
-  font-size: 18px;
-}
-.wrap .box1 .morning_call .col.hour {
-  flex: 33.333%;
-}
-.wrap .box1 .morning_call .col.minute {
-  flex: 33.333%;
-}
-.wrap .box1 .morning_call .col span {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 59px;
-  min-height: 59px;
+}
+.wrap .box1 .morning_call .col {
+  width: 33.333%;
+  max-width: 90px;
+  height: 186px;
+  overflow: hidden;
+}
+.wrap .box1 .morning_call .col .drum-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.wrap .box1 .morning_call .col .drum-inner .drum-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 63px;
   font-size: 50px;
   font-weight: 600;
   color: #e2e2e2;
-  scroll-snap-align: center;
-  transition: all 0.3s ease;
+  transition: color 0.2s, transform 0.2s;
+  cursor: pointer;
 }
-.wrap .box1 .morning_call .col span:not(:last-child) {
-  margin-bottom: 8px;
-}
-.wrap .box1 .morning_call .col span.active {
+.wrap .box1 .morning_call .col .drum-inner .drum-item.selected {
   color: #333;
 }
-.wrap .box1 .morning_call .center-line {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 59px;
-  width: 100%;
-  /* background: rgba(0, 0, 0, 0.04); */
-  border-radius: 8px;
-  pointer-events: none;
+.wrap .box1 .morning_call .col.ampm .drum-item {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.36px;
 }
-.wrap .box1 .morning_call .center-line::before {
-  position: relative;
-  top: -13px;
-  left: 64.5%;
-  content: ":";
+.wrap .box1 .morning_call .col.hour .drum-item {
+  justify-content: flex-end;
+  padding: 0 20px;
+}
+.wrap .box1 .morning_call .colon {
   font-size: 60px;
 }
 .wrap .week_wrap {
@@ -257,7 +238,6 @@ body {
   font-weight: 500;
   color: #333;
   border-radius: 50%;
-  border: 1px solid transparent;
   background-color: #fff;
 }
 .wrap .week_wrap li button.red {
@@ -267,7 +247,8 @@ body {
   color: #08f;
 }
 .wrap .week_wrap li button.active {
-  border: 1px solid #e8e8ea;
+  color: #fff;
+  background-color: #5143bf;
 }
 .wrap .switch_wrap {
   display: flex;
