@@ -47,36 +47,57 @@ function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 	});
 }
 
-/* 무한 드럼 */
 function buildInfiniteDrum(colId, innerId, items, initIdx, onChange) {
 	const col = document.getElementById(colId);
 	const inner = document.getElementById(innerId);
 	let idx = initIdx;
 
-	const redraw = () => {
-		inner.innerHTML = '';
+	const VISIBLE = 5;
+	const nodes = [];
+	for (let i = 0; i < VISIBLE; i++) {
+		const div = document.createElement('div');
+		div.className = 'drum-item';
+		div.style.cssText = `height:${ITEM_H}px;will-change:transform;`;
+		inner.appendChild(div);
+		nodes.push(div);
+	}
+
+	let renderedBase = Math.round(idx);
+
+	const updateText = () => {
 		const base = Math.round(idx);
-
-		for (let i = base - 2; i <= base + 2; i++) {
-			const realIdx = ((i % items.length) + items.length) % items.length;
-			const dist = Math.abs(i - idx);
-
-			const div = document.createElement('div');
-			div.className =
-				'drum-item' +
-				(dist < 0.5 ? ' selected' : dist < 1.5 ? ' near' : '');
-			div.style.height = ITEM_H + 'px';
-			div.textContent = items[realIdx];
-
-			inner.appendChild(div);
+		for (let i = 0; i < VISIBLE; i++) {
+			const absIdx = base - 2 + i;
+			const realIdx = ((absIdx % items.length) + items.length) % items.length;
+			nodes[i].textContent = items[realIdx];
 		}
-		inner.style.transform = `translateY(-${ITEM_H}px)`;
+		renderedBase = base;
+	};
+
+	const updateClasses = () => {
+		const base = Math.round(idx);
+		for (let i = 0; i < VISIBLE; i++) {
+			const absIdx = base - 2 + i;
+			const dist = Math.abs(absIdx - idx);
+			nodes[i].className = 'drum-item' +
+				(dist < 0.5 ? ' selected' : dist < 1.5 ? ' near' : '');
+		}
+	};
+
+	const redraw = () => {
+		const base = Math.round(idx);
+		if (base !== renderedBase) updateText();
+		updateClasses();
+		const offset = -(2 + (idx - base)) * ITEM_H;
+		inner.style.transform = `translateY(${offset}px)`;
 	};
 
 	const snap = () => {
 		idx = Math.round(idx);
 		const real = ((idx % items.length) + items.length) % items.length;
-		redraw();
+		updateText();
+		updateClasses();
+		inner.style.transform = `translateY(${-2 * ITEM_H}px)`;
 		onChange(real, idx);
 	};
 
@@ -88,17 +109,18 @@ function buildInfiniteDrum(colId, innerId, items, initIdx, onChange) {
 		snap
 	);
 
+	updateText();
 	redraw();
 
 	return {
 		forceIdx(i) {
 			idx = i;
+			updateText();
 			redraw();
 		}
 	};
 }
 
-/* 유한 드럼 */
 function buildFiniteDrum(colId, innerId, items, initIdx, onChange) {
 	const col = document.getElementById(colId);
 	const inner = document.getElementById(innerId);
@@ -106,28 +128,50 @@ function buildFiniteDrum(colId, innerId, items, initIdx, onChange) {
 
 	const clamp = v => Math.max(0, Math.min(items.length - 1, v));
 
-	const redraw = () => {
-		inner.innerHTML = '';
+	const VISIBLE = 5;
+	const nodes = [];
+	for (let i = 0; i < VISIBLE; i++) {
+		const div = document.createElement('div');
+		div.className = 'drum-item';
+		div.style.cssText = `height:${ITEM_H}px;will-change:transform;`;
+		inner.appendChild(div);
+		nodes.push(div);
+	}
+
+	let renderedBase = Math.round(clamp(idx));
+
+	const updateText = () => {
 		const base = Math.round(clamp(idx));
-
-		for (let i = base - 2; i <= base + 2; i++) {
-			const dist = Math.abs(i - idx);
-
-			const div = document.createElement('div');
-			div.className =
-				'drum-item' +
-				(dist < 0.5 ? ' selected' : dist < 1.5 ? ' near' : '');
-			div.style.height = ITEM_H + 'px';
-			div.textContent = i >= 0 && i < items.length ? items[i] : '';
-
-			inner.appendChild(div);
+		for (let i = 0; i < VISIBLE; i++) {
+			const absIdx = base - 2 + i;
+			nodes[i].textContent = (absIdx >= 0 && absIdx < items.length) ? items[absIdx] : '';
 		}
-		inner.style.transform = `translateY(-${ITEM_H}px)`;
+		renderedBase = base;
+	};
+
+	const updateClasses = () => {
+		const base = Math.round(clamp(idx));
+		for (let i = 0; i < VISIBLE; i++) {
+			const absIdx = base - 2 + i;
+			const dist = Math.abs(absIdx - idx);
+			nodes[i].className = 'drum-item' +
+				(dist < 0.5 ? ' selected' : dist < 1.5 ? ' near' : '');
+		}
+	};
+
+	const redraw = () => {
+		const base = Math.round(clamp(idx));
+		if (base !== renderedBase) updateText();
+		updateClasses();
+		const offset = -(2 + (idx - base)) * ITEM_H;
+		inner.style.transform = `translateY(${offset}px)`;
 	};
 
 	const snap = () => {
 		idx = clamp(Math.round(idx));
-		redraw();
+		updateText();
+		updateClasses();
+		inner.style.transform = `translateY(${-2 * ITEM_H}px)`;
 		onChange(idx);
 	};
 
@@ -140,11 +184,13 @@ function buildFiniteDrum(colId, innerId, items, initIdx, onChange) {
 		clamp
 	);
 
+	updateText();
 	redraw();
 
 	return {
 		forceIdx(i) {
 			idx = clamp(i);
+			updateText();
 			redraw();
 		}
 	};
