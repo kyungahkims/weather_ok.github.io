@@ -183,6 +183,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: none;
+  user-select: none;
 }
 .wrap .box1 .morning_call .col {
   width: 33.333%;
