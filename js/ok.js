@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* 모닝콜 */
 const ITEM_H = 63;
-const DRAG_SENSITIVITY = 1.8;
-const MOMENTUM_MULTIPLIER = 8;
+const DRAG_SENSITIVITY = 1.1;
+const MOMENTUM_MULTIPLIER = 4;
 
 /* 공통 드래그 */
 function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
