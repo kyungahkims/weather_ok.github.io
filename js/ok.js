@@ -169,16 +169,18 @@ const ampmDrum = buildFiniteDrum('drum-ampm', 'inner-ampm', ampmItems, ampmIdx, 
 	ampmIdx = i;
 });
 
+const initCycle = Math.floor(rawHour / 12);
+const initAmpm = ampmIdx;
+
 buildInfiniteDrum('drum-hour', 'inner-hour', hourItems, hourIdx, (real, raw) => {
-	const prevRaw = rawHour;
 	rawHour = raw;
 	hourIdx = real;
 
-	const prevReal = ((prevRaw % 12) + 12) % 12;
+	const cycleDiff = Math.floor(raw / 12) - initCycle;
+	const newAmpm = (((initAmpm + cycleDiff) % 2) + 2) % 2;
 
-	if ((prevReal === 11 && real === 0 && raw > prevRaw) ||
-		(prevReal === 0 && real === 11 && raw < prevRaw)) {
-		ampmIdx = 1 - ampmIdx;
+	if (newAmpm !== ampmIdx) {
+		ampmIdx = newAmpm;
 		ampmDrum.forceIdx(ampmIdx);
 	}
 });
