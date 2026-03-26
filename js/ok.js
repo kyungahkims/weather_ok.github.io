@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* 모닝콜 */
 const ITEM_H = 63;
+const DRAG_SENSITIVITY = 1.8;
+const MOMENTUM_MULTIPLIER = 8;
 
 /* 공통 드래그 */
 function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
@@ -19,32 +21,69 @@ function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 		startIdx = 0,
 		dragging = false;
 
+	let lastY = 0;
+	let velocity = 0;
+	let lastTime = 0;
+
 	col.addEventListener('pointerdown', e => {
 		startY = e.clientY;
 		startIdx = getIdx();
+
+		lastY = e.clientY;
+		lastTime = Date.now();
+		velocity = 0;
+
 		dragging = true;
 		col.setPointerCapture(e.pointerId);
+
+		document.body.style.overflow = 'hidden';
 	});
 
 	col.addEventListener('pointermove', e => {
 		if (!dragging) return;
-		setIdx(clamp(startIdx + (startY - e.clientY) / ITEM_H));
+
+		e.preventDefault();
+
+		const now = Date.now();
+		const dy = lastY - e.clientY;
+		const dt = now - lastTime;
+
+		velocity = dy / (dt || 1);
+
+		lastY = e.clientY;
+		lastTime = now;
+
+		setIdx(
+			clamp(
+				startIdx +
+					((startY - e.clientY) / ITEM_H) * DRAG_SENSITIVITY
+			)
+		);
+
 		redraw();
 	});
 
 	col.addEventListener('pointerup', () => {
 		if (!dragging) return;
 		dragging = false;
+
+		let momentum = velocity * MOMENTUM_MULTIPLIER;
+		setIdx(clamp(getIdx() + momentum));
+
+		document.body.style.overflow = '';
+
 		snap();
 	});
 
-	col.addEventListener('wheel', e => {
-		e.preventDefault();
-		setIdx(clamp(getIdx() + (e.deltaY > 0 ? 1 : -1)));
-		snap();
-	}, {
-		passive: false
-	});
+	col.addEventListener(
+		'wheel',
+		e => {
+			e.preventDefault();
+			setIdx(clamp(getIdx() + (e.deltaY > 0 ? 1 : -1)));
+			snap();
+		},
+		{ passive: false }
+	);
 }
 
 /* 무한 드럼 */
@@ -58,7 +97,8 @@ function buildInfiniteDrum(colId, innerId, items, initIdx, onChange) {
 		const base = Math.round(idx);
 
 		for (let i = base - 2; i <= base + 2; i++) {
-			const realIdx = ((i % items.length) + items.length) % items.length;
+			const realIdx =
+				((i % items.length) + items.length) % items.length;
 			const dist = Math.abs(i - idx);
 
 			const div = document.createElement('div');
@@ -70,12 +110,15 @@ function buildInfiniteDrum(colId, innerId, items, initIdx, onChange) {
 
 			inner.appendChild(div);
 		}
+
 		inner.style.transform = `translateY(-${ITEM_H}px)`;
 	};
 
 	const snap = () => {
 		idx = Math.round(idx);
-		const real = ((idx % items.length) + items.length) % items.length;
+		const real =
+			((idx % items.length) + items.length) % items.length;
+
 		redraw();
 		onChange(real, idx);
 	};
@@ -118,10 +161,12 @@ function buildFiniteDrum(colId, innerId, items, initIdx, onChange) {
 				'drum-item' +
 				(dist < 0.5 ? ' selected' : dist < 1.5 ? ' near' : '');
 			div.style.height = ITEM_H + 'px';
-			div.textContent = i >= 0 && i < items.length ? items[i] : '';
+			div.textContent =
+				i >= 0 && i < items.length ? items[i] : '';
 
 			inner.appendChild(div);
 		}
+
 		inner.style.transform = `translateY(-${ITEM_H}px)`;
 	};
 
@@ -151,12 +196,12 @@ function buildFiniteDrum(colId, innerId, items, initIdx, onChange) {
 }
 
 /* 데이터 */
-const hourItems = Array.from({
-	length: 12
-}, (_, i) => String(i + 1));
-const minItems = Array.from({
-	length: 60
-}, (_, i) => String(i).padStart(2, '0'));
+const hourItems = Array.from({ length: 12 }, (_, i) =>
+	String(i + 1)
+);
+const minItems = Array.from({ length: 60 }, (_, i) =>
+	String(i).padStart(2, '0')
+);
 const ampmItems = ['오전', '오후'];
 
 let ampmIdx = 0,
@@ -165,24 +210,45 @@ let ampmIdx = 0,
 	rawHour = 0;
 
 /* 생성 */
-const ampmDrum = buildFiniteDrum('drum-ampm', 'inner-ampm', ampmItems, ampmIdx, i => {
-	ampmIdx = i;
-});
-
-buildInfiniteDrum('drum-hour', 'inner-hour', hourItems, hourIdx, (real, raw) => {
-	const prevRaw = rawHour;
-	rawHour = raw;
-	hourIdx = real;
-
-	const prevReal = ((prevRaw % 12) + 12) % 12;
-
-	if ((prevReal === 11 && real === 0 && raw > prevRaw) ||
-		(prevReal === 0 && real === 11 && raw < prevRaw)) {
-		ampmIdx = 1 - ampmIdx;
-		ampmDrum.forceIdx(ampmIdx);
+const ampmDrum = buildFiniteDrum(
+	'drum-ampm',
+	'inner-ampm',
+	ampmItems,
+	ampmIdx,
+	i => {
+		ampmIdx = i;
 	}
-});
+);
 
-buildInfiniteDrum('drum-min', 'inner-min', minItems, minIdx, i => {
-	minIdx = i;
-});
+buildInfiniteDrum(
+	'drum-hour',
+	'inner-hour',
+	hourItems,
+	hourIdx,
+	(real, raw) => {
+		const prevRaw = rawHour;
+		rawHour = raw;
+		hourIdx = real;
+
+		const prevReal =
+			((prevRaw % 12) + 12) % 12;
+
+		if (
+			(prevReal === 11 && real === 0 && raw > prevRaw) ||
+			(prevReal === 0 && real === 11 && raw < prevRaw)
+		) {
+			ampmIdx = 1 - ampmIdx;
+			ampmDrum.forceIdx(ampmIdx);
+		}
+	}
+);
+
+buildInfiniteDrum(
+	'drum-min',
+	'inner-min',
+	minItems,
+	minIdx,
+	i => {
+		minIdx = i;
+	}
+);
