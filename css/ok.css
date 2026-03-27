@@ -209,7 +209,8 @@ body {
   font-weight: 600;
   color: #e2e2e2;
   transition: color 0.2s, transform 0.2s;
-  cursor: pointer;
+  cursor: grab;
+  transform-style: preserve-3d;
 }
 .wrap .box1 .morning_call .col .drum-inner .drum-item.selected {
   color: #333;
