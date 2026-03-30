@@ -12,7 +12,7 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: #fff;
+    background: #f5f5f5;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 
@@ -25,18 +25,33 @@
     position: relative;
   }
 
+  /* 선택 영역 하이라이트 */
+  .morning_call::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 63px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 10px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
   .col {
-    width: 33.333%;
-    max-width: 90px;
-    height: 186px;
+    width: 90px;
+    height: 189px; /* 3 * ITEM_H = 63*3 */
     overflow: hidden;
     position: relative;
+    z-index: 1;
   }
 
   .drum-inner {
     display: flex;
     flex-direction: column;
     align-items: center;
+    /* transition은 snap 시에만 JS로 붙였다 뗌 */
   }
 
   .drum-item {
@@ -48,13 +63,13 @@
     height: 63px;
     font-size: 50px;
     font-weight: 600;
-    color: #e2e2e2;
+    color: #d0d0d0;
     cursor: grab;
-    transform-style: preserve-3d;
-    transition: color 0.2s, transform 0.2s;
+    transition: color 0.15s;
   }
-  .drum-item.near     { color: #bbb; }
-  .drum-item.selected { color: #333; }
+
+  .drum-item.near   { color: #999; }
+  .drum-item.selected { color: #1a1a1a; }
 
   .col.ampm .drum-item {
     font-size: 18px;
@@ -69,8 +84,15 @@
 
   .colon {
     font-size: 60px;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1;
+    margin: 0 2px;
+    position: relative;
+    z-index: 1;
   }
 
+  /* 위아래 페이드 */
   .col::before,
   .col::after {
     content: '';
@@ -82,13 +104,13 @@
   }
   .col::before {
     top: 0;
-    background: linear-gradient(to bottom, #fff 0%, transparent 100%);
+    background: linear-gradient(to bottom, #f5f5f5 0%, transparent 100%);
   }
   .col::after {
     bottom: 0;
-    background: linear-gradient(to top, #fff 0%, transparent 100%);
+    background: linear-gradient(to top, #f5f5f5 0%, transparent 100%);
   }
-
+</style>
 </head>
 <body>
 
@@ -369,4 +391,3 @@ buildInfiniteDrum('drum-min', 'inner-min', minItems, minIdx, i => {
 </script>
 </body>
 </html>
-
