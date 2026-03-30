@@ -365,19 +365,24 @@ function buildFiniteDrum(colId, innerId, items, initIdx, onChange) {
 }
 
 /* ── 데이터 ── */
-const hourItems = Array.from({ length: 12 }, (_, i) => String(i + 1));
+// 인덱스 0 = '12', 1 = '1', ..., 11 = '11'
+// → 사이클 경계가 정확히 12→1 사이(인덱스 11→12)에서 발생
+const hourItems = ['12', ...Array.from({ length: 11 }, (_, i) => String(i + 1))];
 const minItems  = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 const ampmItems = ['오전', '오후'];
 
-// FIX 2: 현재 시각 기준으로 초기값 설정
+// 현재 시각 기준으로 초기값 설정
 const now      = new Date();
 const nowHour  = now.getHours();   // 0~23
 const nowMin   = now.getMinutes(); // 0~59
 
 // 오전/오후 초기 인덱스 (0=오전, 1=오후)
 let ampmIdx = nowHour < 12 ? 0 : 1;
-// 12시간제 시 인덱스 (0~11, 표시는 1~12)
-let hourIdx = nowHour % 12;        // 0=12시, 1=1시 ... 11=11시
+
+// hourItems에서 현재 시각에 해당하는 인덱스
+// 0시/12시 → 인덱스 0('12'), 1시/13시 → 인덱스 1('1'), ..., 11시/23시 → 인덱스 11('11')
+const h12 = nowHour % 12;          // 0~11
+let hourIdx = h12;                  // 인덱스 0='12', 1='1', ..., 11='11'
 let minIdx  = nowMin;
 
 let ampmDrum;
@@ -388,19 +393,18 @@ ampmDrum = buildFiniteDrum('drum-ampm', 'inner-ampm', ampmItems, ampmIdx, i => {
 });
 
 /* ── 시간 드럼 ── */
-// FIX 2: raw 인덱스를 실제 12시간 사이클 기반으로 추적
-// hourIdx 0 = 12시 표시 (hourItems[0] = '1'이 아닌 배열 인덱스 0)
-// 초기 raw = ampmIdx * 12 + hourIdx (오전이면 0~11, 오후면 12~23 영역에서 시작)
+// raw = ampmIdx * 12 + hourIdx
+// 오전 12시 → raw=0, 오전 1시 → raw=1, ..., 오전 11시 → raw=11
+// 오후 12시 → raw=12, 오후 1시 → raw=13, ..., 오후 11시 → raw=23
 const initRawHour = ampmIdx * 12 + hourIdx;
 
 buildInfiniteDrum('drum-hour', 'inner-hour', hourItems, initRawHour, (real, raw) => {
   hourIdx = real;
 
-  // FIX 2: raw를 12로 나눈 몫의 홀짝으로 오전/오후 결정
-  // 초기 ampmIdx 기준으로 relative 사이클 계산
-  // raw가 양수든 음수든 floor division으로 올바른 사이클 추적
+  // raw를 12로 나눈 몫의 홀짝으로 오전/오후 결정
+  // Math.floor 로 음수 raw도 올바르게 처리
   const cycle   = Math.floor(raw / 12);
-  const newAmpm = ((cycle % 2) + 2) % 2;  // 음수 처리 포함
+  const newAmpm = ((cycle % 2) + 2) % 2;
 
   if (newAmpm !== ampmIdx) {
     ampmIdx = newAmpm;
