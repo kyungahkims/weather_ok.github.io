@@ -9,224 +9,260 @@ document.addEventListener('DOMContentLoaded', () => {
 	});
 });
 
-
 /* 모닝콜 */
 const ITEM_H = 63;
 
-/* 공통 드래그 */
 function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
-	let startY = 0,
-		startIdx = 0,
-		dragging = false;
+	let startY = 0;
+	let startIdx = 0;
+	let dragging = false;
+	let lastY = 0;
+	let lastTime = 0;
+	let velocity = 0;
+	let rafId = null;
+
+	const cancelMomentum = () => {
+		if (rafId) {
+			cancelAnimationFrame(rafId);
+			rafId = null;
+		}
+	};
+
+	const runMomentum = () => {
+		cancelMomentum();
+		const snapDir = velocity > 0 ? Math.ceil : Math.floor;
+		let vel = velocity / ITEM_H;
+		const friction = 0.88;
+		const minVel = 0.003;
+
+		const step = () => {
+			vel *= friction;
+			if (Math.abs(vel) < minVel) {
+				setIdx(clamp(snapDir(getIdx())));
+				snap(snapDir);
+				return;
+			}
+			setIdx(clamp(getIdx() + vel * 16));
+			redraw(false);
+			rafId = requestAnimationFrame(step);
+		};
+		rafId = requestAnimationFrame(step);
+	};
 
 	col.addEventListener('pointerdown', e => {
+		cancelMomentum();
 		startY = e.clientY;
+		lastY = e.clientY;
+		lastTime = e.timeStamp;
 		startIdx = getIdx();
+		velocity = 0;
 		dragging = true;
 		col.setPointerCapture(e.pointerId);
 	});
 
 	col.addEventListener('pointermove', e => {
 		if (!dragging) return;
+		const dt = e.timeStamp - lastTime;
+		if (dt > 0) velocity = (lastY - e.clientY) / dt;
+		lastY = e.clientY;
+		lastTime = e.timeStamp;
 		setIdx(clamp(startIdx + (startY - e.clientY) / ITEM_H));
-		redraw();
+		redraw(false);
 	});
 
 	col.addEventListener('pointerup', () => {
 		if (!dragging) return;
 		dragging = false;
-		snap();
+		if (Math.abs(velocity) > 0.3) runMomentum();
+		else snap(Math.round);
 	});
 
 	col.addEventListener('wheel', e => {
 		e.preventDefault();
+		cancelMomentum();
 		setIdx(clamp(getIdx() + (e.deltaY > 0 ? 1 : -1)));
-		snap();
+		snap(Math.round);
 	}, {
 		passive: false
 	});
 }
 
-/* 무한 드럼 */
 function buildInfiniteDrum(colId, innerId, items, initIdx, onChange) {
 	const col = document.getElementById(colId);
 	const inner = document.getElementById(innerId);
 	let idx = initIdx;
+	let renderedBase = null;
 
-	const VISIBLE = 5;
-	const nodes = [];
-	for (let i = 0; i < VISIBLE; i++) {
-		const div = document.createElement('div');
-		div.className = 'drum-item';
-		div.style.cssText = `height:${ITEM_H}px;will-change:transform;`;
-		inner.appendChild(div);
-		nodes.push(div);
-	}
-
-	let renderedBase = Math.round(idx);
-
-	const updateText = () => {
-		const base = Math.round(idx);
-		for (let i = 0; i < VISIBLE; i++) {
-			const absIdx = base - 2 + i;
-			const realIdx = ((absIdx % items.length) + items.length) % items.length;
-			nodes[i].textContent = items[realIdx];
-		}
+	const buildDOM = (base) => {
+		inner.innerHTML = '';
 		renderedBase = base;
+		for (let i = base - 2; i <= base + 2; i++) {
+			const realIdx = ((i % items.length) + items.length) % items.length;
+			const div = document.createElement('div');
+			div.className = 'drum-item';
+			div.style.height = ITEM_H + 'px';
+			div.textContent = items[realIdx];
+			inner.appendChild(div);
+		}
 	};
 
-	const updateClasses = () => {
-		const base = Math.round(idx);
-		for (let i = 0; i < VISIBLE; i++) {
-			const absIdx = base - 2 + i;
-			const dist = Math.abs(absIdx - idx);
-			nodes[i].className = 'drum-item' +
+	const updateSelected = () => {
+		const ch = inner.children;
+		const base = renderedBase;
+		for (let i = 0; i < ch.length; i++) {
+			const dist = Math.abs((base - 2 + i) - idx);
+			ch[i].className =
+				'drum-item' +
 				(dist < 0.5 ? ' selected' : dist < 1.5 ? ' near' : '');
 		}
 	};
 
-	const redraw = () => {
-		const base = Math.round(idx);
-		if (base !== renderedBase) updateText();
-		updateClasses();
-		const offset = -ITEM_H - (idx - base) * ITEM_H;
-		inner.style.transform = `translateY(${offset}px)`;
+	const applyTranslate = (animated) => {
+		const ty = -ITEM_H + (renderedBase - idx) * ITEM_H;
+		if (animated) {
+			inner.style.transition = 'transform 0.18s cubic-bezier(0.22,1,0.36,1)';
+			const onEnd = () => {
+				inner.style.transition = '';
+				inner.removeEventListener('transitionend', onEnd);
+			};
+			inner.addEventListener('transitionend', onEnd);
+		} else {
+			inner.style.transition = '';
+		}
+		inner.style.transform = `translateY(${ty}px)`;
 	};
 
-	const snap = () => {
-		idx = Math.round(idx);
+	const redraw = (full = true) => {
+		const base = Math.round(idx);
+		if (full || renderedBase === null || Math.abs(base - renderedBase) >= 2) {
+			buildDOM(base);
+		}
+		applyTranslate(false);
+		updateSelected();
+	};
+
+	const snap = (roundFn = Math.round) => {
+		idx = roundFn(idx);
 		const real = ((idx % items.length) + items.length) % items.length;
-		updateText();
-		updateClasses();
-		inner.style.transform = `translateY(${-ITEM_H}px)`;
+		buildDOM(idx);
+		applyTranslate(true);
+		updateSelected();
 		onChange(real, idx);
 	};
 
-	attachDrag(
-		col,
-		() => idx,
-		v => (idx = v),
-		redraw,
-		snap
-	);
-
-	updateText();
-	redraw();
+	attachDrag(col, () => idx, v => (idx = v), redraw, snap);
+	buildDOM(Math.round(idx));
+	applyTranslate(false);
+	updateSelected();
 
 	return {
 		forceIdx(i) {
 			idx = i;
-			updateText();
-			redraw();
+			buildDOM(Math.round(idx));
+			applyTranslate(true);
+			updateSelected();
 		}
 	};
 }
 
-/* 유한 드럼 */
 function buildFiniteDrum(colId, innerId, items, initIdx, onChange) {
 	const col = document.getElementById(colId);
 	const inner = document.getElementById(innerId);
 	let idx = initIdx;
-
+	let renderedBase = null;
 	const clamp = v => Math.max(0, Math.min(items.length - 1, v));
 
-	const VISIBLE = 5;
-	const nodes = [];
-	for (let i = 0; i < VISIBLE; i++) {
-		const div = document.createElement('div');
-		div.className = 'drum-item';
-		div.style.cssText = `height:${ITEM_H}px;will-change:transform;`;
-		inner.appendChild(div);
-		nodes.push(div);
-	}
-
-	let renderedBase = Math.round(clamp(idx));
-
-	const updateText = () => {
-		const base = Math.round(clamp(idx));
-		for (let i = 0; i < VISIBLE; i++) {
-			const absIdx = base - 2 + i;
-			nodes[i].textContent = (absIdx >= 0 && absIdx < items.length) ? items[absIdx] : '';
-		}
+	const buildDOM = (base) => {
+		inner.innerHTML = '';
 		renderedBase = base;
+		for (let i = 0; i < items.length; i++) {
+			const div = document.createElement('div');
+			div.className = 'drum-item';
+			div.style.height = ITEM_H + 'px';
+			div.textContent = items[i];
+			inner.appendChild(div);
+		}
 	};
 
-	const updateClasses = () => {
-		const base = Math.round(clamp(idx));
-		for (let i = 0; i < VISIBLE; i++) {
-			const absIdx = base - 2 + i;
-			const dist = Math.abs(absIdx - idx);
-			nodes[i].className = 'drum-item' +
+	const updateSelected = () => {
+		const ch = inner.children;
+		for (let i = 0; i < ch.length; i++) {
+			const dist = Math.abs(i - idx);
+			ch[i].className =
+				'drum-item' +
 				(dist < 0.5 ? ' selected' : dist < 1.5 ? ' near' : '');
 		}
 	};
 
-	const redraw = () => {
-		const base = Math.round(clamp(idx));
-		if (base !== renderedBase) updateText();
-		updateClasses();
-		const offset = -ITEM_H - (idx - base) * ITEM_H;
-		inner.style.transform = `translateY(${offset}px)`;
+	const applyTranslate = (animated) => {
+		const ty = ITEM_H - idx * ITEM_H;
+		if (animated) {
+			inner.style.transition = 'transform 0.18s cubic-bezier(0.22,1,0.36,1)';
+			const onEnd = () => {
+				inner.style.transition = '';
+				inner.removeEventListener('transitionend', onEnd);
+			};
+			inner.addEventListener('transitionend', onEnd);
+		} else {
+			inner.style.transition = '';
+		}
+		inner.style.transform = `translateY(${ty}px)`;
 	};
 
-	const snap = () => {
-		idx = clamp(Math.round(idx));
-		updateText();
-		updateClasses();
-		inner.style.transform = `translateY(${-ITEM_H}px)`;
+	const redraw = (full = true) => {
+		if (full || renderedBase === null) buildDOM(clamp(Math.round(idx)));
+		applyTranslate(false);
+		updateSelected();
+	};
+
+	const snap = (roundFn = Math.round) => {
+		idx = clamp(roundFn(idx));
+		applyTranslate(true);
+		updateSelected();
 		onChange(idx);
 	};
 
-	attachDrag(
-		col,
-		() => idx,
-		v => (idx = v),
-		redraw,
-		snap,
-		clamp
-	);
-
-	updateText();
-	redraw();
+	attachDrag(col, () => idx, v => (idx = clamp(v)), redraw, snap, clamp);
+	buildDOM(clamp(Math.round(idx)));
+	applyTranslate(false);
+	updateSelected();
 
 	return {
 		forceIdx(i) {
 			idx = clamp(i);
-			updateText();
-			redraw();
+			applyTranslate(true);
+			updateSelected();
 		}
 	};
 }
 
-/* 데이터 */
-const hourItems = Array.from({
-	length: 12
-}, (_, i) => String(i + 1));
+const hourItems = ['12', ...Array.from({
+	length: 11
+}, (_, i) => String(i + 1))];
 const minItems = Array.from({
 	length: 60
 }, (_, i) => String(i).padStart(2, '0'));
 const ampmItems = ['오전', '오후'];
 
-let ampmIdx = 0,
-	hourIdx = 0,
-	minIdx = 0,
-	rawHour = 0;
+const now = new Date();
+const nowHour = now.getHours();
+const nowMin = now.getMinutes();
+let ampmIdx = nowHour < 12 ? 0 : 1;
+const h12 = nowHour % 12;
+let hourIdx = h12;
+let minIdx = nowMin;
+let ampmDrum;
 
-/* 생성 */
-const ampmDrum = buildFiniteDrum('drum-ampm', 'inner-ampm', ampmItems, ampmIdx, i => {
+ampmDrum = buildFiniteDrum('drum-ampm', 'inner-ampm', ampmItems, ampmIdx, i => {
 	ampmIdx = i;
 });
 
-const initCycle = Math.floor(rawHour / 12);
-const initAmpm  = ampmIdx;
+const initRawHour = ampmIdx * 12 + hourIdx;
 
-buildInfiniteDrum('drum-hour', 'inner-hour', hourItems, hourIdx, (real, raw) => {
-	rawHour = raw;
+buildInfiniteDrum('drum-hour', 'inner-hour', hourItems, initRawHour, (real, raw) => {
 	hourIdx = real;
-
-	const cycleDiff = Math.floor(raw / 12) - initCycle;
-	const newAmpm   = (((initAmpm + cycleDiff) % 2) + 2) % 2;
-
+	const cycle = Math.floor(raw / 12);
+	const newAmpm = ((cycle % 2) + 2) % 2;
 	if (newAmpm !== ampmIdx) {
 		ampmIdx = newAmpm;
 		ampmDrum.forceIdx(ampmIdx);
