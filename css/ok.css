@@ -180,6 +180,7 @@ body {
   margin-top: 16px;
 }
 .wrap .box1 .morning_call {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -192,11 +193,20 @@ body {
   height: 186px;
   overflow: hidden;
 }
+.wrap .box1 .morning_call .col .col::before,
+.wrap .box1 .morning_call .col .col::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 63px;
+  z-index: 2;
+  pointer-events: none;
+}
 .wrap .box1 .morning_call .col .drum-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .wrap .box1 .morning_call .col .drum-inner .drum-item {
   flex-shrink: 0;
@@ -208,9 +218,8 @@ body {
   font-size: 50px;
   font-weight: 600;
   color: #e2e2e2;
-  transition: color 0.2s, transform 0.2s;
+  transition: color 0.15s;
   cursor: grab;
-  transform-style: preserve-3d;
 }
 .wrap .box1 .morning_call .col .drum-inner .drum-item.selected {
   color: #333;
