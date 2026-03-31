@@ -13,12 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
 const ITEM_H = 63;
 
 function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
-	let startY = 0;
-	let startIdx = 0;
-	let dragging = false;
-	let lastY = 0;
-	let lastTime = 0;
-	let velocity = 0;
+	let startY = 0, startIdx = 0, dragging = false;
+	let lastY = 0, lastTime = 0, velocity = 0;
 	let rafId = null;
 
 	const cancelMomentum = () => {
@@ -31,9 +27,9 @@ function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 	const runMomentum = () => {
 		cancelMomentum();
 		const snapDir = velocity > 0 ? Math.ceil : Math.floor;
-		let vel = velocity / ITEM_H;
-		const friction = 0.88;
-		const minVel = 0.003;
+		let vel = velocity / ITEM_H; // index/frame 기준 속도
+		const friction = 0.96;
+		const minVel = 0.001;
 
 		const step = () => {
 			vel *= friction;
@@ -42,7 +38,7 @@ function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 				snap(snapDir);
 				return;
 			}
-			setIdx(clamp(getIdx() + vel * 16));
+			setIdx(clamp(getIdx() + vel));
 			redraw(false);
 			rafId = requestAnimationFrame(step);
 		};
@@ -63,7 +59,7 @@ function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 	col.addEventListener('pointermove', e => {
 		if (!dragging) return;
 		const dt = e.timeStamp - lastTime;
-		if (dt > 0) velocity = (lastY - e.clientY) / dt;
+		if (dt > 0) velocity = (lastY - e.clientY) / dt * 16; // px/frame 기준
 		lastY = e.clientY;
 		lastTime = e.timeStamp;
 		setIdx(clamp(startIdx + (startY - e.clientY) / ITEM_H));
@@ -82,9 +78,7 @@ function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 		cancelMomentum();
 		setIdx(clamp(getIdx() + (e.deltaY > 0 ? 1 : -1)));
 		snap(Math.round);
-	}, {
-		passive: false
-	});
+	}, { passive: false });
 }
 
 function buildInfiniteDrum(colId, innerId, items, initIdx, onChange) {
