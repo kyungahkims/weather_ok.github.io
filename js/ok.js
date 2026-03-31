@@ -2,6 +2,10 @@
 const STEP = 67;
 
 document.querySelectorAll('.morning_call .col').forEach(col => {
+	if (!col.classList.contains('ampm')) {
+		col.scrollTop = STEP;
+	}
+
 	let wheelLock = false;
 
 	col.addEventListener('wheel', e => {
@@ -19,7 +23,7 @@ document.querySelectorAll('.morning_call .col').forEach(col => {
 		passive: false
 	});
 
-	col.addEventListener('scroll', () => {
+	const updateActive = () => {
 		const center = col.scrollTop + col.clientHeight / 2;
 
 		col.querySelectorAll('span').forEach(item => {
@@ -28,7 +32,11 @@ document.querySelectorAll('.morning_call .col').forEach(col => {
 
 			item.classList.toggle('active', diff < STEP / 2);
 		});
-	});
+	};
+
+	col.addEventListener('scroll', updateActive);
+
+	updateActive();
 });
 
 /* 요일 선택 */
