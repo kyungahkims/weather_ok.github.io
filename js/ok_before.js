@@ -34,27 +34,19 @@ function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 		const snapDir = velocity > 0 ? Math.ceil : Math.floor;
 		let vel = velocity / ITEM_H;
 
-		const friction = 0.93;
-		const minVel = 0.002;
+		const friction = 0.90;
+		const minVel = 0.15;
 
 		const step = () => {
 			vel *= friction;
 
 			if (Math.abs(vel) < minVel) {
-				const target = Math.round(getIdx());
-				const diff = target - getIdx();
-
-				if (Math.abs(diff) < 0.01) {
-					setIdx(clamp(target));
-					snap(Math.round, true)
-					return;
-				}
-
-				setIdx(getIdx() + diff * 0.2);
-			} else {
-				setIdx(clamp(getIdx() + vel));
+				setIdx(clamp(Math.round(getIdx())));
+				snap(Math.round, false);
+				return;
 			}
 
+			setIdx(clamp(getIdx() + vel));
 			redraw(false);
 			rafId = requestAnimationFrame(step);
 		};
@@ -87,14 +79,14 @@ function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 		if (!dragging) return;
 		dragging = false;
 		if (Math.abs(velocity) > 0.3) runMomentum();
-		else snap(Math.round, true);
+		else snap(Math.round, false);
 	});
 
 	col.addEventListener('wheel', e => {
 		e.preventDefault();
 		cancelMomentum();
 		setIdx(clamp(getIdx() + (e.deltaY > 0 ? 1 : -1)));
-		snap(Math.round, true);
+		snap(Math.round, false);
 	}, {
 		passive: false
 	});
