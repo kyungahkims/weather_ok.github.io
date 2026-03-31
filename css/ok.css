@@ -257,7 +257,6 @@ body {
   font-weight: 500;
   color: #333;
   border-radius: 50%;
-  border: 1px solid transparent;
   background-color: #fff;
 }
 .wrap .week_wrap li button.red {
@@ -267,7 +266,8 @@ body {
   color: #08f;
 }
 .wrap .week_wrap li button.active {
-  border: 1px solid #e8e8ea;
+  color: #fff;
+  background-color: #5143bf;
 }
 .wrap .switch_wrap {
   display: flex;

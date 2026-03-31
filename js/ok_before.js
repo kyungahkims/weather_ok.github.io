@@ -12,9 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
 /* 모닝콜 */
 const ITEM_H = 63;
 
-/* =========================
-   공통 드래그 (절대 수정 X)
-========================= */
 function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 	let startY = 0,
 		startIdx = 0,
@@ -103,9 +100,6 @@ function attachDrag(col, getIdx, setIdx, redraw, snap, clamp = v => v) {
 	});
 }
 
-/* =========================
-   Infinite Drum (시, 분)
-========================= */
 function buildInfiniteDrum(colId, innerId, items, initIdx, onChange, onDrag) {
 	const col = document.getElementById(colId);
 	const inner = document.getElementById(innerId);
@@ -169,13 +163,13 @@ function buildInfiniteDrum(colId, innerId, items, initIdx, onChange, onDrag) {
 		onChange(real, idx);
 	};
 
-	/* 🔥 핵심: onDrag 추가 */
+
 	attachDrag(
 		col,
 		() => idx,
 		v => {
 			idx = v;
-			if (onDrag) onDrag(v); // 👉 여기서 실시간 처리
+			if (onDrag) onDrag(v);
 		},
 		redraw,
 		snap
@@ -195,9 +189,6 @@ function buildInfiniteDrum(colId, innerId, items, initIdx, onChange, onDrag) {
 	};
 }
 
-/* =========================
-   Finite Drum (AMPM)
-========================= */
 function buildFiniteDrum(colId, innerId, items, initIdx, onChange) {
 	const col = document.getElementById(colId);
 	const inner = document.getElementById(innerId);
@@ -256,11 +247,12 @@ function buildFiniteDrum(colId, innerId, items, initIdx, onChange) {
 	};
 }
 
-/* =========================
-   데이터
-========================= */
-const hourItems = ['12', ...Array.from({ length: 11 }, (_, i) => String(i + 1))];
-const minItems = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+const hourItems = ['12', ...Array.from({
+	length: 11
+}, (_, i) => String(i + 1))];
+const minItems = Array.from({
+	length: 60
+}, (_, i) => String(i).padStart(2, '0'));
 const ampmItems = ['오전', '오후'];
 
 const now = new Date();
@@ -274,9 +266,6 @@ let minIdx = nowMin;
 let ampmDrum;
 let hourDrum;
 
-/* =========================
-   AMPM
-========================= */
 ampmDrum = buildFiniteDrum('drum-ampm', 'inner-ampm', ampmItems, ampmIdx, newAmpmIdx => {
 	if (newAmpmIdx === ampmIdx) return;
 	ampmIdx = newAmpmIdx;
@@ -284,9 +273,6 @@ ampmDrum = buildFiniteDrum('drum-ampm', 'inner-ampm', ampmItems, ampmIdx, newAmp
 	hourDrum.forceIdx(newRaw);
 });
 
-/* =========================
-   HOUR (🔥 핵심)
-========================= */
 const initRawHour = ampmIdx * 12 + hourIdx;
 
 hourDrum = buildInfiniteDrum(
@@ -297,7 +283,7 @@ hourDrum = buildInfiniteDrum(
 	(real, raw) => {
 		hourIdx = real;
 	},
-	// 🔥 실시간 AMPM 변경 (여기만!)
+
 	raw => {
 		const newAmpm = ((Math.floor(raw / 12)) % 2 + 2) % 2;
 
@@ -308,9 +294,6 @@ hourDrum = buildInfiniteDrum(
 	}
 );
 
-/* =========================
-   MIN (영향 없음)
-========================= */
 buildInfiniteDrum('drum-min', 'inner-min', minItems, minIdx, i => {
 	minIdx = i;
 });
