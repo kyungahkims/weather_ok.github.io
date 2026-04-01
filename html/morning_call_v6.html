@@ -1,0 +1,218 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  font-family: var(--font-sans);
+}
+.morning_call {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  height: 190px;
+  width: 320px;
+  overflow: hidden;
+}
+.col {
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  padding: 76px 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.col::-webkit-scrollbar { display: none; }
+
+.col.ampm { flex: 0 0 72px; }
+.col.ampm span {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+  height: 59px;
+  min-height: 59px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #c0c0c0;
+  scroll-snap-align: center;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+.col.ampm span:not(:last-child) { margin-bottom: 8px; }
+.col.ampm span.active { color: #333; font-weight: 500; }
+
+.col.hour, .col.minute { flex: 1; }
+.col.hour span, .col.minute span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 59px;
+  min-height: 59px;
+  font-size: 50px;
+  font-weight: 600;
+  color: #e2e2e2;
+  scroll-snap-align: center;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+.col span:not(:last-child) { margin-bottom: 8px; }
+.col span.active { color: #333; }
+
+.center-line {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 59px;
+  width: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.center-line::before {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 64.5%;
+  content: ":";
+  font-size: 60px;
+  font-weight: 600;
+  color: #333;
+  line-height: 1;
+  margin-top: -2px;
+}
+</style>
+
+<div class="wrap">
+  <div class="morning_call">
+    <div class="col ampm" id="col-ampm">
+      <span>오전</span>
+      <span>오후</span>
+    </div>
+    <div class="col hour" id="col-hour"></div>
+    <div class="col minute" id="col-min"></div>
+    <div class="center-line"></div>
+  </div>
+</div>
+
+<script>
+const STEP = 67;
+const REPEATS = 30;
+const HOURS = Array.from({length:12}, (_,i) => String(i+1));
+const MINS  = Array.from({length:60}, (_,i) => String(i).padStart(2,'0'));
+
+function fillCol(el, items) {
+  el.innerHTML = '';
+  for (let r = 0; r < REPEATS; r++)
+    items.forEach(v => {
+      const s = document.createElement('span');
+      s.textContent = v;
+      el.appendChild(s);
+    });
+}
+
+function scrollToIndex(el, items, idx) {
+  el.scrollTop = (Math.floor(REPEATS/2) * items.length + idx) * STEP;
+}
+
+function updateActive(el) {
+  const center = el.scrollTop + el.clientHeight / 2;
+  el.querySelectorAll('span').forEach(s => {
+    const sc = s.offsetTop + s.offsetHeight / 2;
+    s.classList.toggle('active', Math.abs(center - sc) < STEP / 2);
+  });
+}
+
+function snapNearest(el) {
+  const center = el.scrollTop + el.clientHeight / 2;
+  let bestTop = el.scrollTop, bestDiff = Infinity;
+  el.querySelectorAll('span').forEach(s => {
+    const sc = s.offsetTop + s.offsetHeight / 2;
+    const diff = Math.abs(center - sc);
+    if (diff < bestDiff) { bestDiff = diff; bestTop = s.offsetTop - (el.clientHeight/2 - s.offsetHeight/2); }
+  });
+  el.scrollTo({ top: bestTop, behavior: 'smooth' });
+}
+
+function setAmpm(isPM, animate) {
+  const target = isPM ? STEP : 0;
+  colAmpm.scrollTo({ top: target, behavior: animate ? 'smooth' : 'instant' });
+  setTimeout(() => updateActive(colAmpm), animate ? 250 : 0);
+}
+
+const now = new Date();
+const h24 = now.getHours();
+const isPM = h24 >= 12;
+const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+
+const colAmpm = document.getElementById('col-ampm');
+const colHour = document.getElementById('col-hour');
+const colMin  = document.getElementById('col-min');
+
+fillCol(colHour, HOURS);
+fillCol(colMin, MINS);
+
+setTimeout(() => {
+  setAmpm(isPM, false);
+  scrollToIndex(colHour, HOURS, h12 - 1);
+  updateActive(colHour);
+  scrollToIndex(colMin, MINS, now.getMinutes());
+  updateActive(colMin);
+}, 50);
+
+colAmpm.addEventListener('scroll', () => {
+  updateActive(colAmpm);
+  clearTimeout(colAmpm._t);
+  colAmpm._t = setTimeout(() => {
+    const target = colAmpm.scrollTop > STEP / 2 ? STEP : 0;
+    colAmpm.scrollTo({ top: target, behavior: 'smooth' });
+    setTimeout(() => updateActive(colAmpm), 200);
+  }, 180);
+});
+
+let wlAmpm = false;
+colAmpm.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (wlAmpm) return; wlAmpm = true;
+  colAmpm.scrollTop += e.deltaY > 0 ? STEP : -STEP;
+  setTimeout(() => wlAmpm = false, 120);
+}, { passive: false });
+
+let prevHour = String(h12);
+
+[colHour, colMin].forEach((el, i) => {
+  const items = i === 0 ? HOURS : MINS;
+  let timer;
+  el.addEventListener('scroll', () => {
+    updateActive(el);
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      snapNearest(el);
+      if (el === colHour) {
+        setTimeout(() => {
+          const cur = getSelected(colHour);
+          if (cur !== prevHour) {
+            const curIsPM = colAmpm.scrollTop > STEP / 2;
+            if (prevHour === '11' && cur === '12') setAmpm(!curIsPM, true);
+            else if (prevHour === '12' && cur === '11') setAmpm(!curIsPM, true);
+            prevHour = cur;
+          }
+        }, 250);
+      }
+    }, 180);
+  });
+  let wl = false;
+  el.addEventListener('wheel', e => {
+    e.preventDefault();
+    if (wl) return; wl = true;
+    el.scrollTop += e.deltaY > 0 ? STEP : -STEP;
+    setTimeout(() => wl = false, 120);
+  }, { passive: false });
+});
+
+function getSelected(el) {
+  return (el.querySelector('span.active') || {textContent:''}).textContent;
+}
+</script>
