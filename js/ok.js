@@ -52,15 +52,6 @@ function bindCol(el) {
     el.scrollTop += e.deltaY > 0 ? STEP : -STEP;
     setTimeout(() => wl = false, 120);
   }, { passive: false });
-
-  let startY = 0, startTop = 0;
-  el.addEventListener('touchstart', e => {
-    startY = e.touches[0].clientY;
-    startTop = el.scrollTop;
-  }, { passive: true });
-  el.addEventListener('touchmove', e => {
-    el.scrollTop = startTop + (startY - e.touches[0].clientY);
-  }, { passive: true });
 }
 
 const now = new Date();
