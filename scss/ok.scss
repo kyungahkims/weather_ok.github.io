@@ -247,13 +247,12 @@ body {
 				}
 			}
 
-			.center-line {
+			.center_line {
 				position: absolute;
 				top: 50%;
 				transform: translateY(-50%);
 				height: 59px;
 				width: 100%;
-				/* background: rgba(0, 0, 0, 0.04); */
 				border-radius: 8px;
 				pointer-events: none;
 

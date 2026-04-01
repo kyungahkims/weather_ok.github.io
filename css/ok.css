@@ -226,17 +226,16 @@ body {
 .wrap .box1 .morning_call .col span.active {
   color: #333;
 }
-.wrap .box1 .morning_call .center-line {
+.wrap .box1 .morning_call .center_line {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   height: 59px;
   width: 100%;
-  /* background: rgba(0, 0, 0, 0.04); */
   border-radius: 8px;
   pointer-events: none;
 }
-.wrap .box1 .morning_call .center-line::before {
+.wrap .box1 .morning_call .center_line::before {
   position: relative;
   top: -13px;
   left: 64.5%;
